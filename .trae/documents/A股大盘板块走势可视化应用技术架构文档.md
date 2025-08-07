@@ -45,12 +45,17 @@ graph TD
 **核心算法**：使用D3.js的treemap布局算法实现板块和股票的矩形分割
 
 **布局原理**：
-- 每个板块作为一个大矩形容器
-- 板块内的股票按流通市值大小排列成小矩形
-- 使用递归分割算法将矩形空间按比例分配给各股票
-- 保证所有股票矩形完全填满板块矩形，无空隙
+
+* 每个板块作为一个大矩形容器
+
+* 板块内的股票按流通市值大小排列成小矩形
+
+* 使用递归分割算法将矩形空间按比例分配给各股票
+
+* 保证所有股票矩形完全填满板块矩形，无空隙
 
 **数据结构**：
+
 ```typescript
 interface TreemapNode {
   id: string;
@@ -77,9 +82,12 @@ interface StockTreemap {
 ```
 
 **布局算法配置**：
-- 使用D3.treemap()的squarify算法，优化矩形长宽比
-- 设置padding分隔板块和股票边界
-- 支持动态resize和重新布局
+
+* 使用D3.treemap()的squarify算法，优化矩形长宽比
+
+* 设置padding分隔板块和股票边界
+
+* 支持动态resize和重新布局
 
 ## 3. 路由定义
 
@@ -209,12 +217,14 @@ graph TD
 ### 6.1 矩形树图实现方案
 
 **布局流程**：
+
 1. 数据预处理：将板块和股票数据转换为层次化结构
 2. 计算布局：使用D3.treemap计算每个矩形的位置和大小
 3. 渲染矩形：根据布局结果渲染SVG或Canvas矩形
 4. 交互处理：添加鼠标悬停、点击、缩放等交互
 
 **关键技术点**：
+
 ```typescript
 // D3.js treemap布局配置
 const treemap = d3.treemap()
@@ -238,9 +248,12 @@ const colorScale = d3.scaleLinear()
 ```
 
 **响应式设计**：
-- 监听窗口resize事件，动态重新计算布局
-- 移动端优化：调整padding和最小矩形尺寸
-- 支持板块展开/收缩的动画效果
+
+* 监听窗口resize事件，动态重新计算布局
+
+* 移动端优化：调整padding和最小矩形尺寸
+
+* 支持板块展开/收缩的动画效果
 
 ## 7. 数据模型
 
@@ -335,8 +348,6 @@ CREATE INDEX idx_stocks_change_percent ON stocks(change_percent DESC);
 GRANT SELECT ON stocks TO anon;
 GRANT ALL PRIVILEGES ON stocks TO authenticated;
 ```
-
-
 
 实时数据表 (real\_time\_data)
 

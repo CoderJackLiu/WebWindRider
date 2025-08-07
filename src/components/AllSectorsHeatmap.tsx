@@ -41,30 +41,45 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   /**
-   * 获取颜色映射函数
+   * 获取颜色映射函数 - 使用统一的颜色计算逻辑
    * @param changePercent 涨跌幅百分比
    * @returns 颜色值
    */
   const getColor = (changePercent: number): string => {
+    // 涨幅为红色，跌幅为绿色，不涨不跌为灰色
+    // 按1%幅度分阶，涨跌幅大于4%时颜色饱和度更高
+    
     if (Math.abs(changePercent) < 0.01) {
-      return '#6b7280'; // 灰色 - 平盘
+      return '#6B7280'; // 灰色
     }
     
-    const absPercent = Math.abs(changePercent);
-    const intensity = Math.min(absPercent / 4, 1); // 4%以上为最高强度
-    
     if (changePercent > 0) {
-      // 上涨 - 红色系
-      const red = Math.floor(220 + intensity * 35); // 220-255
-      const green = Math.floor(38 - intensity * 20); // 38-18
-      const blue = Math.floor(38 - intensity * 20); // 38-18
-      return `rgb(${red}, ${green}, ${blue})`;
+      // 红色系 - 涨幅
+      if (changePercent >= 4) {
+        return '#DC2626'; // 深红色，高饱和度
+      } else if (changePercent >= 3) {
+        return '#EF4444'; // 红色
+      } else if (changePercent >= 2) {
+        return '#F87171'; // 浅红色
+      } else if (changePercent >= 1) {
+        return '#FCA5A5'; // 很浅红色
+      } else {
+        return '#FEE2E2'; // 极浅红色
+      }
     } else {
-      // 下跌 - 绿色系
-      const red = Math.floor(34 - intensity * 15); // 34-19
-      const green = Math.floor(197 + intensity * 58); // 197-255
-      const blue = Math.floor(94 - intensity * 30); // 94-64
-      return `rgb(${red}, ${green}, ${blue})`;
+      // 绿色系 - 跌幅
+      const absChange = Math.abs(changePercent);
+      if (absChange >= 4) {
+        return '#059669'; // 深绿色，高饱和度
+      } else if (absChange >= 3) {
+        return '#10B981'; // 绿色
+      } else if (absChange >= 2) {
+        return '#34D399'; // 浅绿色
+      } else if (absChange >= 1) {
+        return '#6EE7B7'; // 很浅绿色
+      } else {
+        return '#D1FAE5'; // 极浅绿色
+      }
     }
   };
 
@@ -290,9 +305,28 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
         .text(d => {
           const width = (d.x1 || 0) - (d.x0 || 0);
           const height = (d.y1 || 0) - (d.y0 || 0);
-          if (width < 40 || height < 20) return '';
+          if (width < 30 || height < 15) return '';
+          
           const name = d.data.name;
-          return name.length > 6 ? name.substring(0, 4) + '...' : name;
+          // 根据矩形宽度动态调整显示的字符数
+          let maxChars = Math.floor(width / 12); // 每个字符大约12像素宽
+          maxChars = Math.max(2, Math.min(maxChars, 8)); // 最少2个字符，最多8个字符
+          
+          if (name.length <= maxChars) {
+            return name;
+          } else {
+            // 优先显示中文名称，如果是代码则尝试显示更有意义的部分
+            if (name.includes('ST') || name.includes('*ST')) {
+              // ST股票特殊处理
+              return name.substring(0, maxChars);
+            } else if (/^[0-9]+$/.test(name)) {
+              // 如果是纯数字代码，显示后几位
+              return name.length > 4 ? name.substring(name.length - 4) : name;
+            } else {
+              // 普通股票名称，截取前几个字符
+              return name.substring(0, maxChars - 1) + '…';
+            }
+          }
         })
         .style('text-shadow', '1px 1px 2px rgba(0,0,0,0.7)');
     });

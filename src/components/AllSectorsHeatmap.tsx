@@ -141,7 +141,7 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
     if (!tooltip) return;
     
     // 使用固定定位，直接使用鼠标坐标
-    const tooltipX = event.clientX + 5;
+    const tooltipX = event.clientX + 15;
     const tooltipY = event.clientY - 50;
     
     // 边界检测，防止超出视窗
@@ -150,7 +150,7 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
     const viewportHeight = window.innerHeight;
     
     // 如果tooltip会超出右边界，则显示在鼠标左侧
-    const finalX = tooltipX + tooltipRect.width > viewportWidth ? event.clientX - tooltipRect.width - 5 : tooltipX;
+    const finalX = tooltipX + tooltipRect.width > viewportWidth ? event.clientX - tooltipRect.width - 15 : tooltipX;
     // 如果tooltip会超出上边界，则显示在鼠标下方
     const finalY = tooltipY < 0 ? event.clientY + 10 : tooltipY;
     

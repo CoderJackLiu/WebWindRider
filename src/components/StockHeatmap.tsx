@@ -241,7 +241,7 @@ const StockHeatmap: React.FC<StockHeatmapProps> = ({
         <div
           className="fixed z-10 bg-white border border-gray-300 rounded-lg shadow-lg p-3 pointer-events-none"
           style={{
-            left: Math.min(tooltip.x + 5, window.innerWidth - 200),
+            left: Math.min(tooltip.x + 15, window.innerWidth - 200),
             top: Math.max(tooltip.y - 50, 10),
             transform: 'translateY(-50%)'
           }}

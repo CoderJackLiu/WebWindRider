@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import AllSectorsHeatmap from '../components/AllSectorsHeatmap';
+import Logo from '../components/Logo';
 import { fetchAllSectorsData, healthCheck } from '../utils/api';
 import type { Sector, Stock } from '../../shared/types';
 
@@ -108,11 +109,17 @@ const HomePage: React.FC = () => {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">
-                A股大盘板块走势
-              </h1>
-              <div className="ml-4 flex items-center space-x-2">
+            <div className="flex items-center min-w-0 flex-1">
+              <Logo size="md" className="mr-2 sm:mr-4" responsive={true} />
+              <div className="flex flex-col min-w-0">
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+                  A股大盘板块走势
+                </h1>
+                <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">
+                  实时股票热力图分析平台
+                </p>
+              </div>
+              <div className="ml-4 sm:ml-6 flex items-center space-x-2">
                 {isOnline ? (
                   <Wifi className="w-5 h-5 text-green-500" />
                 ) : (
@@ -126,10 +133,10 @@ const HomePage: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               {/* 最后更新时间 */}
               {lastUpdate && (
-                <div className="text-sm text-gray-600">
+                <div className="text-xs sm:text-sm text-gray-600 hidden md:block">
                   最后更新: {lastUpdate.toLocaleTimeString()}
                 </div>
               )}
@@ -137,25 +144,30 @@ const HomePage: React.FC = () => {
               {/* 自动刷新开关 */}
               <button
                 onClick={toggleAutoRefresh}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                   autoRefresh
                     ? 'bg-green-100 text-green-800'
                     : 'bg-gray-100 text-gray-800'
                 }`}
               >
-                {autoRefresh ? '自动刷新开' : '自动刷新关'}
+                <span className="hidden sm:inline">
+                  {autoRefresh ? '自动刷新开' : '自动刷新关'}
+                </span>
+                <span className="sm:hidden">
+                  {autoRefresh ? '自动' : '手动'}
+                </span>
               </button>
               
               {/* 手动刷新按钮 */}
               <button
                 onClick={handleRefresh}
                 disabled={loading}
-                className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center space-x-1 px-2 sm:px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <RefreshCw className={`w-4 h-4 ${
                   loading ? 'animate-spin' : ''
                 }`} />
-                <span>刷新</span>
+                <span className="hidden sm:inline">刷新</span>
               </button>
             </div>
           </div>

@@ -31,13 +31,42 @@ app.use('/api/auth', authRoutes);
 app.use('/api/stocks', stocksRoutes);
 
 /**
- * health
+ * health check endpoint
+ * 提供服务器健康状态检查
  */
 app.use('/api/health', (req: Request, res: Response, next: NextFunction): void => {
-  res.status(200).json({
-    success: true,
-    message: 'ok'
-  });
+  try {
+    const healthData = {
+      success: true,
+      message: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      uptime: process.uptime(),
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024 * 100) / 100,
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024 * 100) / 100
+      }
+    };
+    
+    console.log('Health check requested:', {
+      timestamp: healthData.timestamp,
+      userAgent: req.get('User-Agent'),
+      ip: req.ip || req.connection.remoteAddress
+    });
+    
+    res.status(200).json(healthData);
+  } catch (error) {
+    console.error('Health check failed:', {
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
+    });
+    
+    res.status(500).json({
+      success: false,
+      message: 'Health check failed',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 /**

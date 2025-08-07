@@ -6,8 +6,9 @@
 import axios from 'axios';
 import type { Sector, Stock, SectorsResponse, StocksResponse, XueqiuLinkResponse } from '../../shared/types';
 
-// API基础URL - 使用Vite代理
-const API_BASE_URL = '';
+// API基础URL配置
+// 开发环境使用Vite代理，生产环境使用相对路径
+const API_BASE_URL = import.meta.env.PROD ? '' : '';
 
 // 创建axios实例
 const apiClient = axios.create({

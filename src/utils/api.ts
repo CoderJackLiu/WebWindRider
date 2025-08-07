@@ -150,7 +150,8 @@ export async function fetchMultipleSectorsStocks(sectorIds: string[]): Promise<R
 export async function healthCheck(): Promise<boolean> {
   try {
     const response = await apiClient.get('/api/health');
-    return response.data.success === true;
+    // API返回的是status字段，不是success字段
+    return response.data.status === 'OK';
   } catch (error) {
     console.error('健康检查失败:', error);
     return false;

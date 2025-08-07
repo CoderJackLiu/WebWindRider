@@ -104,7 +104,7 @@ const HomePage: React.FC = () => {
   const totalStocks = Object.values(sectorsData).reduce((sum, { stocks }) => sum + stocks.length, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* 头部 */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -175,7 +175,7 @@ const HomePage: React.FC = () => {
       </header>
 
       {/* 主要内容 */}
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full max-w-full px-2 sm:px-4 lg:px-8 py-4 sm:py-8 overflow-x-hidden">
         {/* 错误提示 */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
@@ -191,7 +191,7 @@ const HomePage: React.FC = () => {
         )}
 
         {/* 统计信息 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
               <div className="text-2xl font-bold text-blue-600">{totalSectors}</div>
@@ -221,7 +221,7 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* 颜色说明 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
           <h3 className="text-lg font-bold text-gray-800 mb-3">颜色说明</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="flex items-center space-x-2">
@@ -243,12 +243,12 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* 所有板块热力图 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2 sm:p-4 lg:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 space-y-2 sm:space-y-0">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">
               A股大盘板块热力图
             </h2>
-            <div className="text-sm text-gray-600">
+            <div className="text-xs sm:text-sm text-gray-600">
               共 {totalSectors} 个板块，{totalStocks} 只股票
             </div>
           </div>
@@ -259,11 +259,11 @@ const HomePage: React.FC = () => {
               <span className="ml-3 text-gray-600">加载股票数据中...</span>
             </div>
           ) : Object.keys(sectorsData).length > 0 ? (
-            <div className="w-full overflow-hidden">
+            <div className="w-full rounded-lg" style={{ overflow: 'hidden' }}>
               <AllSectorsHeatmap
                 sectorsData={sectorsData}
-                width={Math.max(1200, windowSize.width - 120)}
-                height={Math.max(800, windowSize.height - 400)}
+                width={windowSize.width <= 768 ? Math.max(320, windowSize.width - 48) : Math.max(800, windowSize.width - 160)}
+                height={windowSize.width <= 768 ? Math.max(400, Math.min(windowSize.height - 300, 500)) : Math.max(600, windowSize.height - 420)}
               />
             </div>
           ) : (
@@ -274,9 +274,11 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* 页脚信息 */}
-        <footer className="mt-8 text-center text-sm text-gray-500">
-          <p>数据每60秒自动更新 | 双击股票块查看雪球K线图</p>
+        <footer className="mt-4 sm:mt-8 text-center text-xs sm:text-sm text-gray-500">
+          <p className="hidden sm:block">数据每60秒自动更新 | 双击股票块查看雪球K线图</p>
+          <p className="sm:hidden">数据每60秒自动更新</p>
           <p className="mt-1">矩形大小代表流通市值，颜色深浅代表涨跌幅度</p>
+          <p className="mt-1 sm:hidden text-xs">长按股票块查看详情 | 双击查看K线图</p>
         </footer>
       </main>
     </div>

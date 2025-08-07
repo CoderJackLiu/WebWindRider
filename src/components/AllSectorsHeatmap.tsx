@@ -39,6 +39,10 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const touchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // 检测是否为移动设备
+  const isMobile = width <= 768;
 
   /**
    * 获取颜色映射函数 - 使用统一的颜色计算逻辑
@@ -98,10 +102,10 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
 
   /**
    * 显示提示框
-   * @param event 鼠标事件
+   * @param event 鼠标或触摸事件
    * @param data 数据
    */
-  const showTooltip = (event: MouseEvent, data: TreemapNode) => {
+  const showTooltip = (event: MouseEvent | TouchEvent, data: TreemapNode) => {
     const tooltip = tooltipRef.current;
     if (!tooltip) return;
 
@@ -133,31 +137,44 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
   };
 
   /**
-   * 更新tooltip位置，使其跟随鼠标移动
-   * @param event 鼠标事件
+   * 更新tooltip位置，使其跟随鼠标或触摸移动
+   * @param event 鼠标或触摸事件
    */
-  const updateTooltipPosition = (event: MouseEvent) => {
+  const updateTooltipPosition = (event: MouseEvent | TouchEvent) => {
     const tooltip = tooltipRef.current;
     if (!tooltip) return;
     
-    // 使用固定定位，直接使用鼠标坐标
-    const tooltipX = event.clientX + 15;
-    const tooltipY = event.clientY - 50;
+    // 获取事件坐标
+    let clientX: number, clientY: number;
+    if ('touches' in event && event.touches.length > 0) {
+      clientX = event.touches[0].clientX;
+      clientY = event.touches[0].clientY;
+    } else if ('clientX' in event) {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    } else {
+      return;
+    }
+    
+    // 使用固定定位，直接使用坐标
+    const tooltipX = clientX + 15;
+    const tooltipY = clientY - 50;
     
     // 边界检测，防止超出视窗
     const tooltipRect = tooltip.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
-    // 如果tooltip会超出右边界，则显示在鼠标左侧
-    const finalX = tooltipX + tooltipRect.width > viewportWidth ? event.clientX - tooltipRect.width - 15 : tooltipX;
-    // 如果tooltip会超出上边界，则显示在鼠标下方
-    const finalY = tooltipY < 0 ? event.clientY + 10 : tooltipY;
+    // 如果tooltip会超出右边界，则显示在左侧
+    const finalX = tooltipX + tooltipRect.width > viewportWidth ? clientX - tooltipRect.width - 15 : tooltipX;
+    // 如果tooltip会超出上边界，则显示在下方
+    const finalY = tooltipY < 0 ? clientY + 10 : tooltipY;
     
     tooltip.style.left = `${finalX}px`;
     tooltip.style.top = `${finalY}px`;
     tooltip.style.transform = 'none';
   };
+
 
   /**
    * 隐藏提示框
@@ -203,12 +220,12 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
       .sum(d => d.value)
       .sort((a, b) => (b.value || 0) - (a.value || 0)) as TreemapHierarchyNode;
 
-    // 创建treemap布局
+    // 创建treemap布局，移动端使用更小的间距
     const treemap = d3.treemap<TreemapNode>()
       .size([width, height])
-      .padding(2)
-      .paddingInner(4)
-      .paddingOuter(6)
+      .padding(isMobile ? 1 : 2)
+      .paddingInner(isMobile ? 2 : 4)
+      .paddingOuter(isMobile ? 3 : 6)
       .round(true);
 
     treemap(root);
@@ -240,31 +257,39 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
       .attr('stroke-width', 2)
       .attr('rx', 4);
 
-    // 板块标题
+    // 板块标题，移动端使用更小的字体
     sectorGroups
       .append('text')
       .attr('x', d => ((d.x0 || 0) + (d.x1 || 0)) / 2)
-      .attr('y', d => (d.y0 || 0) + 20)
+      .attr('y', d => (d.y0 || 0) + (isMobile ? 16 : 20))
       .attr('text-anchor', 'middle')
-      .attr('font-size', '14px')
+      .attr('font-size', isMobile ? '10px' : '14px')
       .attr('font-weight', 'bold')
       .attr('fill', '#374151')
-      .text(d => d.data.name);
+      .text(d => {
+        const name = d.data.name;
+        // 移动端截断过长的板块名称
+        if (isMobile && name.length > 6) {
+          return name.substring(0, 5) + '…';
+        }
+        return name;
+      });
 
     // 绘制股票矩形
     sectorGroups.each(function(sectorNode: TreemapHierarchyNode) {
       const sectorGroup = d3.select(this);
       const stockNodes = (sectorNode.children || []) as TreemapHierarchyNode[];
       
-      // 为每个板块创建子treemap
+      // 为每个板块创建子treemap，移动端调整标题高度
       const sectorWidth = (sectorNode.x1 || 0) - (sectorNode.x0 || 0);
-      const sectorHeight = (sectorNode.y1 || 0) - (sectorNode.y0 || 0) - 30; // 减去标题高度
+      const titleHeight = isMobile ? 24 : 30;
+      const sectorHeight = (sectorNode.y1 || 0) - (sectorNode.y0 || 0) - titleHeight;
       
       if (sectorWidth <= 0 || sectorHeight <= 0) return;
       
       const sectorTreemap = d3.treemap<TreemapNode>()
-        .size([sectorWidth - 8, sectorHeight]) // 减去padding
-        .padding(1)
+        .size([sectorWidth - (isMobile ? 4 : 8), sectorHeight]) // 移动端减少padding
+        .padding(isMobile ? 0.5 : 1)
         .round(true);
       
       const sectorRoot = d3.hierarchy({ 
@@ -286,8 +311,8 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
         .enter()
         .append('rect')
         .attr('class', 'stock-rect')
-        .attr('x', d => (sectorNode.x0 || 0) + 4 + (d.x0 || 0))
-        .attr('y', d => (sectorNode.y0 || 0) + 30 + (d.y0 || 0))
+        .attr('x', d => (sectorNode.x0 || 0) + (isMobile ? 2 : 4) + (d.x0 || 0))
+        .attr('y', d => (sectorNode.y0 || 0) + titleHeight + (d.y0 || 0))
         .attr('width', d => Math.max(0, (d.x1 || 0) - (d.x0 || 0)))
         .attr('height', d => Math.max(0, (d.y1 || 0) - (d.y0 || 0)))
         .attr('fill', d => getColor(d.data.changePercent))
@@ -296,16 +321,52 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
         .attr('rx', 2)
         .style('cursor', 'pointer')
         .on('mouseover', function(event, d) {
-          d3.select(this).attr('stroke-width', 2).attr('stroke', '#1f2937');
-          showTooltip(event, d.data);
+          if (!isMobile) {
+            d3.select(this).attr('stroke-width', 2).attr('stroke', '#1f2937');
+            showTooltip(event, d.data);
+          }
         })
         .on('mousemove', function(event, d) {
-          // 实时更新tooltip位置，使其跟随鼠标移动
-          updateTooltipPosition(event);
+          if (!isMobile) {
+            // 实时更新tooltip位置，使其跟随鼠标移动
+            updateTooltipPosition(event);
+          }
         })
         .on('mouseout', function() {
-          d3.select(this).attr('stroke-width', 0.5).attr('stroke', '#ffffff');
-          hideTooltip();
+          if (!isMobile) {
+            d3.select(this).attr('stroke-width', 0.5).attr('stroke', '#ffffff');
+            hideTooltip();
+          }
+        })
+        .on('touchstart', function(event, d) {
+          if (isMobile) {
+            event.preventDefault();
+            d3.select(this).attr('stroke-width', 2).attr('stroke', '#1f2937');
+            
+            // 长按显示tooltip
+            touchTimeoutRef.current = setTimeout(() => {
+              showTooltip(event, d.data);
+            }, 500); // 500ms长按
+          }
+        })
+        .on('touchend', function(event, d) {
+          if (isMobile) {
+            event.preventDefault();
+            d3.select(this).attr('stroke-width', 0.5).attr('stroke', '#ffffff');
+            
+            if (touchTimeoutRef.current) {
+              clearTimeout(touchTimeoutRef.current);
+              touchTimeoutRef.current = null;
+            }
+            hideTooltip();
+          }
+        })
+        .on('touchmove', function(event) {
+          if (isMobile && touchTimeoutRef.current) {
+            clearTimeout(touchTimeoutRef.current);
+            touchTimeoutRef.current = null;
+            hideTooltip();
+          }
         })
         .on('dblclick', (event, d) => {
           if (d.data.stock) {
@@ -320,19 +381,22 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
         .enter()
         .append('text')
         .attr('class', 'stock-text')
-        .attr('x', d => (sectorNode.x0 || 0) + 4 + ((d.x0 || 0) + (d.x1 || 0)) / 2)
+        .attr('x', d => (sectorNode.x0 || 0) + (isMobile ? 2 : 4) + ((d.x0 || 0) + (d.x1 || 0)) / 2)
         .attr('y', d => {
           const height = (d.y1 || 0) - (d.y0 || 0);
-          const centerY = (sectorNode.y0 || 0) + 30 + ((d.y0 || 0) + (d.y1 || 0)) / 2;
-          // 如果高度足够显示两行文本，则将名称向上偏移
-          return height >= 30 ? centerY - 6 : centerY;
+          const centerY = (sectorNode.y0 || 0) + titleHeight + ((d.y0 || 0) + (d.y1 || 0)) / 2;
+          // 移动端调整文本偏移
+          const textOffset = isMobile ? 4 : 6;
+          return height >= (isMobile ? 20 : 30) ? centerY - textOffset : centerY;
         })
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .attr('font-size', d => {
           const width = (d.x1 || 0) - (d.x0 || 0);
           const height = (d.y1 || 0) - (d.y0 || 0);
-          return Math.min(width / 8, height / 4, 10) + 'px';
+          const maxSize = isMobile ? 8 : 10;
+          const divisor = isMobile ? 10 : 8;
+          return Math.min(width / divisor, height / 4, maxSize) + 'px';
         })
         .attr('fill', '#ffffff')
         .attr('font-weight', 'bold')
@@ -340,12 +404,16 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
         .text(d => {
           const width = (d.x1 || 0) - (d.x0 || 0);
           const height = (d.y1 || 0) - (d.y0 || 0);
-          if (width < 30 || height < 15) return '';
+          const minWidth = isMobile ? 20 : 30;
+          const minHeight = isMobile ? 12 : 15;
+          if (width < minWidth || height < minHeight) return '';
           
           const name = d.data.name;
-          // 根据矩形宽度动态调整显示的字符数
-          let maxChars = Math.floor(width / 12); // 每个字符大约12像素宽
-          maxChars = Math.max(2, Math.min(maxChars, 8)); // 最少2个字符，最多8个字符
+          // 移动端调整字符显示逻辑
+          const charWidth = isMobile ? 8 : 12;
+          let maxChars = Math.floor(width / charWidth);
+          const maxLimit = isMobile ? 6 : 8;
+          maxChars = Math.max(2, Math.min(maxChars, maxLimit));
           
           if (name.length <= maxChars) {
             return name;
@@ -372,19 +440,22 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
         .enter()
         .append('text')
         .attr('class', 'stock-percent-text')
-        .attr('x', d => (sectorNode.x0 || 0) + 4 + ((d.x0 || 0) + (d.x1 || 0)) / 2)
+        .attr('x', d => (sectorNode.x0 || 0) + (isMobile ? 2 : 4) + ((d.x0 || 0) + (d.x1 || 0)) / 2)
         .attr('y', d => {
           const height = (d.y1 || 0) - (d.y0 || 0);
-          const centerY = (sectorNode.y0 || 0) + 30 + ((d.y0 || 0) + (d.y1 || 0)) / 2;
-          // 如果高度足够显示两行文本，则将涨跌幅向下偏移
-          return height >= 30 ? centerY + 8 : centerY;
+          const centerY = (sectorNode.y0 || 0) + titleHeight + ((d.y0 || 0) + (d.y1 || 0)) / 2;
+          // 移动端调整文本偏移
+          const textOffset = isMobile ? 6 : 8;
+          return height >= (isMobile ? 20 : 30) ? centerY + textOffset : centerY;
         })
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .attr('font-size', d => {
           const width = (d.x1 || 0) - (d.x0 || 0);
           const height = (d.y1 || 0) - (d.y0 || 0);
-          return Math.min(width / 10, height / 5, 8) + 'px';
+          const maxSize = isMobile ? 6 : 8;
+          const divisor = isMobile ? 12 : 10;
+          return Math.min(width / divisor, height / 5, maxSize) + 'px';
         })
         .attr('fill', '#ffffff')
         .attr('font-weight', 'bold')
@@ -392,8 +463,10 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
         .text(d => {
           const width = (d.x1 || 0) - (d.x0 || 0);
           const height = (d.y1 || 0) - (d.y0 || 0);
-          // 只有在矩形足够大时才显示涨跌幅
-          if (width < 40 || height < 25) return '';
+          // 移动端调整显示阈值
+          const minWidth = isMobile ? 25 : 40;
+          const minHeight = isMobile ? 18 : 25;
+          if (width < minWidth || height < minHeight) return '';
           
           const changePercent = d.data.changePercent;
           const sign = changePercent >= 0 ? '+' : '';
@@ -405,8 +478,12 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
   }, [sectorsData, width, height]);
 
   return (
-    <div className="relative">
-      <svg ref={svgRef}></svg>
+    <div className="relative w-full h-full overflow-hidden">
+      <svg 
+        ref={svgRef}
+        className="w-full h-full"
+        style={{ maxWidth: '100%', maxHeight: '100%' }}
+      ></svg>
       <div
         ref={tooltipRef}
         className="fixed z-10 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-sm pointer-events-none"

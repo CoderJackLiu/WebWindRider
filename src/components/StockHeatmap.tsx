@@ -67,15 +67,12 @@ const StockHeatmap: React.FC<StockHeatmapProps> = ({
    * @param stock 股票数据
    */
   const handleMouseEnter = (event: React.MouseEvent, stock: Stock) => {
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (rect) {
-      setTooltip({
-        stock,
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top,
-        visible: true
-      });
-    }
+    setTooltip({
+      stock,
+      x: event.clientX,
+      y: event.clientY,
+      visible: true
+    });
   };
 
   /**
@@ -134,24 +131,29 @@ const StockHeatmap: React.FC<StockHeatmapProps> = ({
           .attr('stroke-width', 2)
           .attr('stroke', '#333333');
         
-        const rect = svgRef.current?.getBoundingClientRect();
-        if (rect) {
-          const stockData = d.data as StockTreemap;
-          setTooltip({
-            stock: {
-              code: stockData.code,
-              name: stockData.name,
-              price: stockData.price,
-              change: stockData.price * stockData.changePercent / 100,
-              changePercent: stockData.changePercent,
-              marketCap: stockData.value,
-              volume: 0
-            },
-            x: event.pageX - rect.left,
-            y: event.pageY - rect.top,
-            visible: true
-          });
-        }
+        const stockData = d.data as StockTreemap;
+        setTooltip({
+          stock: {
+            code: stockData.code,
+            name: stockData.name,
+            price: stockData.price,
+            change: stockData.price * stockData.changePercent / 100,
+            changePercent: stockData.changePercent,
+            marketCap: stockData.value,
+            volume: 0
+          },
+          x: event.clientX,
+          y: event.clientY,
+          visible: true
+        });
+      })
+      .on('mousemove', function(event, d) {
+        // 实时更新tooltip位置，使其跟随鼠标移动
+        setTooltip(prev => ({
+          ...prev,
+          x: event.clientX,
+          y: event.clientY
+        }));
       })
       .on('mouseleave', function() {
         d3.select(this)
@@ -190,9 +192,10 @@ const StockHeatmap: React.FC<StockHeatmapProps> = ({
         if (area < 10000) return '12px';
         return '14px';
       })
-      .style('fill', '#333333')
+      .style('fill', '#ffffff')
       .style('font-weight', 'bold')
       .style('pointer-events', 'none')
+      .style('text-shadow', '1px 1px 2px rgba(0,0,0,0.7)')
       .text(d => {
         const width = (d.x1 || 0) - (d.x0 || 0);
         const height = (d.y1 || 0) - (d.y0 || 0);
@@ -209,12 +212,10 @@ const StockHeatmap: React.FC<StockHeatmapProps> = ({
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'middle')
       .style('font-size', '10px')
-      .style('fill', d => {
-        const stockData = d.data as StockTreemap;
-        return stockData.changePercent >= 0 ? '#dc2626' : '#16a34a';
-      })
+      .style('fill', '#ffffff')
       .style('font-weight', 'bold')
       .style('pointer-events', 'none')
+      .style('text-shadow', '1px 1px 2px rgba(0,0,0,0.7)')
       .text(d => {
         const width = (d.x1 || 0) - (d.x0 || 0);
         const height = (d.y1 || 0) - (d.y0 || 0);
@@ -238,11 +239,11 @@ const StockHeatmap: React.FC<StockHeatmapProps> = ({
       {/* 悬停提示框 */}
       {tooltip.visible && (
         <div
-          className="absolute z-10 bg-white border border-gray-300 rounded-lg shadow-lg p-3 pointer-events-none"
+          className="fixed z-10 bg-white border border-gray-300 rounded-lg shadow-lg p-3 pointer-events-none"
           style={{
-            left: tooltip.x + 10,
-            top: tooltip.y - 10,
-            transform: 'translateY(-100%)'
+            left: Math.min(tooltip.x + 5, window.innerWidth - 200),
+            top: Math.max(tooltip.y - 50, 10),
+            transform: 'translateY(-50%)'
           }}
         >
           <div className="text-sm font-bold text-gray-800">{tooltip.stock.name}</div>

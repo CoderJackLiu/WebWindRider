@@ -10,13 +10,13 @@ import { fetchAllSectorsData, healthCheck } from '../utils/api';
 import type { Sector, Stock } from '../../shared/types';
 
 const HomePage: React.FC = () => {
-  // 状态管理
   const [sectorsData, setSectorsData] = useState<Record<string, { sector: Sector; stocks: Stock[] }>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
   /**
    * 检查服务器连接状态
@@ -64,6 +64,16 @@ const HomePage: React.FC = () => {
    */
   const toggleAutoRefresh = useCallback(() => {
     setAutoRefresh(prev => !prev);
+  }, []);
+
+  // 窗口大小变化监听
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // 初始化加载
@@ -153,7 +163,7 @@ const HomePage: React.FC = () => {
       </header>
 
       {/* 主要内容 */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* 错误提示 */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
@@ -237,11 +247,11 @@ const HomePage: React.FC = () => {
               <span className="ml-3 text-gray-600">加载股票数据中...</span>
             </div>
           ) : Object.keys(sectorsData).length > 0 ? (
-            <div className="flex justify-center">
+            <div className="w-full overflow-hidden">
               <AllSectorsHeatmap
                 sectorsData={sectorsData}
-                width={1200}
-                height={800}
+                width={Math.max(1200, windowSize.width - 120)}
+                height={Math.max(800, windowSize.height - 400)}
               />
             </div>
           ) : (

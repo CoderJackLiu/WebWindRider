@@ -129,8 +129,34 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
 
     tooltip.innerHTML = content;
     tooltip.style.display = 'block';
-    tooltip.style.left = `${event.pageX + 10}px`;
-    tooltip.style.top = `${event.pageY - 10}px`;
+    updateTooltipPosition(event);
+  };
+
+  /**
+   * 更新tooltip位置，使其跟随鼠标移动
+   * @param event 鼠标事件
+   */
+  const updateTooltipPosition = (event: MouseEvent) => {
+    const tooltip = tooltipRef.current;
+    if (!tooltip) return;
+    
+    // 使用固定定位，直接使用鼠标坐标
+    const tooltipX = event.clientX + 5;
+    const tooltipY = event.clientY - 50;
+    
+    // 边界检测，防止超出视窗
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // 如果tooltip会超出右边界，则显示在鼠标左侧
+    const finalX = tooltipX + tooltipRect.width > viewportWidth ? event.clientX - tooltipRect.width - 5 : tooltipX;
+    // 如果tooltip会超出上边界，则显示在鼠标下方
+    const finalY = tooltipY < 0 ? event.clientY + 10 : tooltipY;
+    
+    tooltip.style.left = `${finalX}px`;
+    tooltip.style.top = `${finalY}px`;
+    tooltip.style.transform = 'none';
   };
 
   /**
@@ -273,6 +299,10 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
           d3.select(this).attr('stroke-width', 2).attr('stroke', '#1f2937');
           showTooltip(event, d.data);
         })
+        .on('mousemove', function(event, d) {
+          // 实时更新tooltip位置，使其跟随鼠标移动
+          updateTooltipPosition(event);
+        })
         .on('mouseout', function() {
           d3.select(this).attr('stroke-width', 0.5).attr('stroke', '#ffffff');
           hideTooltip();
@@ -379,7 +409,7 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
       <svg ref={svgRef}></svg>
       <div
         ref={tooltipRef}
-        className="absolute z-10 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-sm pointer-events-none"
+        className="fixed z-10 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-sm pointer-events-none"
         style={{ display: 'none' }}
       ></div>
     </div>

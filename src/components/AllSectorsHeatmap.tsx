@@ -291,13 +291,18 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
         .append('text')
         .attr('class', 'stock-text')
         .attr('x', d => (sectorNode.x0 || 0) + 4 + ((d.x0 || 0) + (d.x1 || 0)) / 2)
-        .attr('y', d => (sectorNode.y0 || 0) + 30 + ((d.y0 || 0) + (d.y1 || 0)) / 2)
+        .attr('y', d => {
+          const height = (d.y1 || 0) - (d.y0 || 0);
+          const centerY = (sectorNode.y0 || 0) + 30 + ((d.y0 || 0) + (d.y1 || 0)) / 2;
+          // 如果高度足够显示两行文本，则将名称向上偏移
+          return height >= 30 ? centerY - 6 : centerY;
+        })
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .attr('font-size', d => {
           const width = (d.x1 || 0) - (d.x0 || 0);
           const height = (d.y1 || 0) - (d.y0 || 0);
-          return Math.min(width / 8, height / 3, 12) + 'px';
+          return Math.min(width / 8, height / 4, 10) + 'px';
         })
         .attr('fill', '#ffffff')
         .attr('font-weight', 'bold')
@@ -327,6 +332,42 @@ const AllSectorsHeatmap: React.FC<AllSectorsHeatmapProps> = ({
               return name.substring(0, maxChars - 1) + '…';
             }
           }
+        })
+        .style('text-shadow', '1px 1px 2px rgba(0,0,0,0.7)');
+      
+      // 添加涨跌幅文本（仅在矩形足够大时显示）
+      sectorGroup
+        .selectAll('.stock-percent-text')
+        .data((sectorRoot.children || []) as TreemapHierarchyNode[])
+        .enter()
+        .append('text')
+        .attr('class', 'stock-percent-text')
+        .attr('x', d => (sectorNode.x0 || 0) + 4 + ((d.x0 || 0) + (d.x1 || 0)) / 2)
+        .attr('y', d => {
+          const height = (d.y1 || 0) - (d.y0 || 0);
+          const centerY = (sectorNode.y0 || 0) + 30 + ((d.y0 || 0) + (d.y1 || 0)) / 2;
+          // 如果高度足够显示两行文本，则将涨跌幅向下偏移
+          return height >= 30 ? centerY + 8 : centerY;
+        })
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('font-size', d => {
+          const width = (d.x1 || 0) - (d.x0 || 0);
+          const height = (d.y1 || 0) - (d.y0 || 0);
+          return Math.min(width / 10, height / 5, 8) + 'px';
+        })
+        .attr('fill', '#ffffff')
+        .attr('font-weight', 'bold')
+        .style('pointer-events', 'none')
+        .text(d => {
+          const width = (d.x1 || 0) - (d.x0 || 0);
+          const height = (d.y1 || 0) - (d.y0 || 0);
+          // 只有在矩形足够大时才显示涨跌幅
+          if (width < 40 || height < 25) return '';
+          
+          const changePercent = d.data.changePercent;
+          const sign = changePercent >= 0 ? '+' : '';
+          return `${sign}${changePercent.toFixed(2)}%`;
         })
         .style('text-shadow', '1px 1px 2px rgba(0,0,0,0.7)');
     });

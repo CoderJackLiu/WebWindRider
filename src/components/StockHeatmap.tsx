@@ -209,14 +209,19 @@ const StockHeatmap: React.FC<StockHeatmapProps> = ({
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'middle')
       .style('font-size', '10px')
-      .style('fill', '#666666')
+      .style('fill', d => {
+        const stockData = d.data as StockTreemap;
+        return stockData.changePercent >= 0 ? '#dc2626' : '#16a34a';
+      })
+      .style('font-weight', 'bold')
       .style('pointer-events', 'none')
       .text(d => {
         const width = (d.x1 || 0) - (d.x0 || 0);
         const height = (d.y1 || 0) - (d.y0 || 0);
         if (width < 60 || height < 50) return '';
         const stockData = d.data as StockTreemap;
-        return formatValue(stockData.changePercent, 'percent');
+        const sign = stockData.changePercent >= 0 ? '+' : '';
+        return `${sign}${stockData.changePercent.toFixed(2)}%`;
       });
 
   }, [stocks, sectorName, width, height]);
